@@ -79,7 +79,7 @@ public class DiscoverFragment extends Fragment {
                         byte[] dataBlock = result.getScanRecord().getBytes();
                         logthis(Arrays.toString(dataBlock));
                         int temp = (dataBlock[23] & 0xFF) - 43;
-                        int pressure = ((dataBlock[24] & 0xFF) & 0x70 << 4) | (dataBlock[22] & 0xFF);
+                        int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
                         logthis("temp: "+temp + " in C");
                         logthis("temp: "+ ((temp * 1.8) + 32) + " in F");
                         logthis("pressure: " + pressure + "in kpa");
