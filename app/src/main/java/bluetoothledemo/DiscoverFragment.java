@@ -6,6 +6,7 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.os.Bundle;
+import android.os.ParcelUuid;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +17,8 @@ import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 
 /**
@@ -80,11 +83,14 @@ public class DiscoverFragment extends Fragment {
                         logthis(Arrays.toString(dataBlock));
                         int temp = (dataBlock[23] & 0xFF) - 43;
                         int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
+
                         logthis("temp: "+temp + " in C");
                         logthis("temp: "+ ((temp * 1.8) + 32) + " in F");
                         logthis("pressure: " + pressure + "in kpa");
                         logthis("pressure: " + (pressure/6.895) + "in psi");
-                       logthis(builder.toString());
+
+                        String UUIDx = UUID.nameUUIDFromBytes(result.getScanRecord().getBytes()).toString();
+                       logthis("UUID:" +UUIDx);
                     }
                 }
             }
