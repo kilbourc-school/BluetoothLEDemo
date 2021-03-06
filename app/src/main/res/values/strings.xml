@@ -3,9 +3,11 @@
     <string name="discover">Discover</string>
     <string name="logger_n">Logger:\n</string>
     <string name="mainstr">This is the start screen\n This makes sure bluetooth is on and we have permissions.</string>
-    <string name="check_permissions">Check Permissions</string>
+    <string name="swap_temp_sign">Swap Temp Sign</string>
+    <string name="swap_pres_sign">Swap Pres Sign</string>
     <string name="startDiscover">Add a Transmitter</string>
     <string name="stopDiscover">Searching…</string>
     <string name="startDiscovering">Start Discovering</string>
+    <string name="main">Tire View</string>
 
 </resources>

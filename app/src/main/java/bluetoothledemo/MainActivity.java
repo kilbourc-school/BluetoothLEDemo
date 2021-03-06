@@ -12,7 +12,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         db = new SQLiteDatabaseHandler(getApplicationContext());
-        //db.onUpgrade(db.getDB(),1,3);
+        //db.onUpgrade(db.getDB(),1,4);
     }
     public static SQLiteDatabaseHandler getDatabase(){
         return db;

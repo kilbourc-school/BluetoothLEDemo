@@ -4,32 +4,15 @@ public class Tire {
     private String address;
     private int curTemp;
     private int baseTemp;
-    private int tempPref;//0 is C, 1 is F
     private int curPres;
     private int basePres;
-    private int presPref;//0 is kPa, 1 is PSI
 
-    public Tire(String address, int curTemp, int baseTemp, int tempPref, int curPres, int basePres, int presPref) {
+    public Tire(String address, int curTemp, int baseTemp, int curPres, int basePres) {
         this.address = address;
         this.curTemp = curTemp;
         this.baseTemp = baseTemp;
-        this.tempPref = tempPref;
         this.curPres = curPres;
         this.basePres = basePres;
-        this.presPref = presPref;
-    }
-
-    @Override
-    public String toString() {
-        return "Tire{" +
-                "address='" + address + '\'' +
-                ", curTemp=" + curTemp +
-                ", baseTemp=" + baseTemp +
-                ", tempPref=" + tempPref +
-                ", curPres=" + curPres +
-                ", basePres=" + basePres +
-                ", presPref=" + presPref +
-                '}';
     }
 
     public String getAddress() {
@@ -56,14 +39,6 @@ public class Tire {
         this.baseTemp = baseTemp;
     }
 
-    public int getTempPref() {
-        return tempPref;
-    }
-
-    public void setTempPref(int tempPref) {
-        this.tempPref = tempPref;
-    }
-
     public int getCurPres() {
         return curPres;
     }
@@ -80,11 +55,15 @@ public class Tire {
         this.basePres = basePres;
     }
 
-    public int getPresPref() {
-        return presPref;
-    }
 
-    public void setPresPref(int presPref) {
-        this.presPref = presPref;
+    @Override
+    public String toString() {
+        return "Tire{" +
+                "address='" + address + '\'' +
+                ", curTemp=" + curTemp +
+                ", baseTemp=" + baseTemp +
+                ", curPres=" + curPres +
+                ", basePres=" + basePres +
+                '}';
     }
 }

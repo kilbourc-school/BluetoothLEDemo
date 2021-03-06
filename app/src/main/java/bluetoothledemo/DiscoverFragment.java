@@ -15,9 +15,6 @@ import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 
-import java.util.Arrays;
-import java.util.UUID;
-
 public class DiscoverFragment extends Fragment {
 
     private BluetoothLeScanner mBluetoothLeScanner;
@@ -42,20 +39,31 @@ public class DiscoverFragment extends Fragment {
                 }
             }
         });
+
+        myView.findViewById(R.id.btn_home).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getView().setVisibility(View.GONE);
+                getActivity()
+                        .getSupportFragmentManager()
+                        .beginTransaction()
+                        .addToBackStack("tag")
+                        .replace(android.R.id.content,new HelpFragment(), "tag")
+                        .commit();
+            }
+        });
         mBluetoothLeScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
         return myView;
     }
 
     void stop_discover() {
         mBluetoothLeScanner.stopScan(mScanCallback);
-        logthis("Discovery stopped");
         discovering = false;
         discover.setText(R.string.startDiscover);
     }
 
     void start_discover() {
         mBluetoothLeScanner.startScan(mScanCallback);
-        logthis("Discovery started");
         discovering = true;
         discover.setText(R.string.stopDiscover);
     }
@@ -81,19 +89,22 @@ public class DiscoverFragment extends Fragment {
                         int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
 
 //                        logthis("temp: "+temp + " in C");
-//                        logthis("temp: "+ ((temp * 1.8) + 32) + " in F");
+                        logthis("temp: "+ ((temp * 1.8) + 32) + " in F");
 //                        logthis("pressure: " + pressure + "in kpa");
-//                        logthis("pressure: " + (pressure/6.895) + "in psi");
+                        logthis("pressure: " + (pressure/6.895) + "in psi");
 //                        String UUIDx = UUID.nameUUIDFromBytes(result.getScanRecord().getBytes()).toString();
 //                        logthis("UUID:" +UUIDx);
 
-                        Tire tire = new Tire(result.getDevice().getAddress(),temp,temp,1,pressure,pressure,1);
+                        Tire tire = new Tire(result.getDevice().getAddress(),temp,temp,pressure,pressure);
                         SQLiteDatabaseHandler db = MainActivity.getDatabase();
                         if(db.tireExists(tire.getAddress())) {
                             db.updateTire(tire);
+                            logthis("TRASMITTER UPDATED!");
                         }else {
                             db.addTire(tire);
+                            logthis("TRASMITTER ADDED!");
                         }
+
                         stop_discover();
                     }
                 }
