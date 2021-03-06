@@ -6,7 +6,6 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.os.Bundle;
-import android.os.ParcelUuid;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,14 +16,10 @@ import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
-
-/**
- * A simple {@link Fragment} subclass.
- */
 public class DiscoverFragment extends Fragment {
+
     private BluetoothLeScanner mBluetoothLeScanner;
     private final static String TAG = "DiscoverFragment";
     TextView logger;
@@ -33,6 +28,7 @@ public class DiscoverFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
         View myView = inflater.inflate(R.layout.fragment_discover, container, false);
         logger = myView.findViewById(R.id.loggerd);
         discover = myView.findViewById(R.id.discover);
@@ -74,23 +70,31 @@ public class DiscoverFragment extends Fragment {
             } else {
                 if (result.getDevice().getName() != null) {
                     if (result.getDevice().getName().contains("TM")) {
-                        //name
-                        StringBuilder builder = new StringBuilder("Name: ").append(result.getDevice().getName());
-                        //address
-                        builder.append("\n").append("address: ").append(result.getDevice().getAddress());
+//                        //name
+//                        StringBuilder builder = new StringBuilder("Name: ").append(result.getDevice().getName());
+//                        //address
+//                        builder.append("\n").append("address: ").append(result.getDevice().getAddress());
                         //data
                         byte[] dataBlock = result.getScanRecord().getBytes();
-                        logthis(Arrays.toString(dataBlock));
+                       // logthis(Arrays.toString(dataBlock));
                         int temp = (dataBlock[23] & 0xFF) - 43;
                         int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
 
-                        logthis("temp: "+temp + " in C");
-                        logthis("temp: "+ ((temp * 1.8) + 32) + " in F");
-                        logthis("pressure: " + pressure + "in kpa");
-                        logthis("pressure: " + (pressure/6.895) + "in psi");
+//                        logthis("temp: "+temp + " in C");
+//                        logthis("temp: "+ ((temp * 1.8) + 32) + " in F");
+//                        logthis("pressure: " + pressure + "in kpa");
+//                        logthis("pressure: " + (pressure/6.895) + "in psi");
+//                        String UUIDx = UUID.nameUUIDFromBytes(result.getScanRecord().getBytes()).toString();
+//                        logthis("UUID:" +UUIDx);
 
-                        String UUIDx = UUID.nameUUIDFromBytes(result.getScanRecord().getBytes()).toString();
-                       logthis("UUID:" +UUIDx);
+                        Tire tire = new Tire(result.getDevice().getAddress(),temp,temp,1,pressure,pressure,1);
+                        SQLiteDatabaseHandler db = MainActivity.getDatabase();
+                        if(db.tireExists(tire.getAddress())) {
+                            db.updateTire(tire);
+                        }else {
+                            db.addTire(tire);
+                        }
+                        stop_discover();
                     }
                 }
             }

@@ -3,6 +3,9 @@ package bluetoothledemo;
 
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -17,19 +20,70 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import java.util.List;
+
 
 /**
  * A simple {@link Fragment} subclass.
  */
 public class HelpFragment extends Fragment {
-    private final static String TAG = "HelpFragment";
     private static final int REQUEST_ENABLE_BT = 2;
     //bluetooth device and code to turn the device on if needed.
     BluetoothAdapter mBluetoothAdapter = null;
-    TextView logger;
+    View myView = null;
+    private final BluetoothLeScanner mBluetoothLeScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();;
 
     public HelpFragment() {
         // Required empty public constructor
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
+        myView = inflater.inflate(R.layout.fragment_help, container, false);
+        checkpermissions();
+        startbt();
+        showTireData(myView);
+        mBluetoothLeScanner.startScan(mScanCallback);
+        return myView;
+    }
+
+    void showTireData(View myView) {
+        SQLiteDatabaseHandler db = MainActivity.getDatabase();
+        List<Tire> allTires = db.allTires();
+        for (int i = 0; i < allTires.size(); i++) {
+            Tire tire = allTires.get(i);
+            TextView textView = null;
+            if (i == 0) {
+                textView = myView.findViewById(R.id.tire1);
+            } else if (i == 1) {
+                textView = myView.findViewById(R.id.tire2);
+            } else if (i == 2) {
+                textView = myView.findViewById(R.id.tire3);
+            } else if (i == 3) {
+                textView = myView.findViewById(R.id.tire4);
+            }
+            if (textView != null) {
+                int pressure = tire.getCurPres();
+                String pressureSign = " kPa";
+                int temp = tire.getCurTemp();
+                String tempSign = " °C";
+                if (tire.getPresPref() == 1) {
+                    pressure = (int) (pressure / 6.895);
+                    pressureSign = " PSI";
+                }
+                if (tire.getTempPref() == 1) {
+                    temp = (int) ((temp * 1.8) + 32);
+                    tempSign = " °F";
+                }
+                textView.setText("Tire " + (i+1) + "\n" + pressure + pressureSign + "\n" + temp + tempSign + "\n\n");
+            }
+        }
+    }
+
+    void checkpermissions() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MainActivity.REQUEST_ACCESS_COURSE_LOCATION);
+        }
     }
 
     //This code will check to see if there is a bluetooth device and
@@ -37,64 +91,36 @@ public class HelpFragment extends Fragment {
     public void startbt() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {
-            // Device does not support Bluetooth
-            logthis("This device does not support bluetooth");
+            System.out.println("This device does not support bluetooth");
             return;
         }
         //make sure bluetooth is enabled.
         if (!mBluetoothAdapter.isEnabled()) {
-            logthis("There is bluetooth, but turned off");
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        } else {
-            logthis("The bluetooth is ready to use.");
         }
     }
 
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View myView = inflater.inflate(R.layout.fragment_help, container, false);
-        logger = myView.findViewById(R.id.loggerh);
-        myView.findViewById(R.id.btn_discover).setOnClickListener(Navigation.createNavigateOnClickListener(R.id.action_help_to_discover));
-        myView.findViewById(R.id.btn_perm).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                checkpermissions();
-            }
-        });
-        checkpermissions();
-        startbt();
-        return myView;
-    }
-
-    void checkpermissions() {
-        //needs fine location for API 28+ or coarse location below 28 for the discovery only.
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            logthis("asking for permissions");
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MainActivity.REQUEST_ACCESS_COURSE_LOCATION);
-            logthis("We don't have permission to fine location");
-        } else {
-            logthis("We have permission to fine location");
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == MainActivity.REQUEST_ACCESS_COURSE_LOCATION) {
-            if (permissions[0].equals(Manifest.permission.ACCESS_FINE_LOCATION)
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                logthis("permission granted to fine location");
+    private final ScanCallback mScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            super.onScanResult(callbackType, result);
+            if (result == null || result.getDevice() == null) {
+            } else {
+                if (result.getDevice().getName() != null) {
+                    if (result.getDevice().getName().contains("TM")) {
+                        byte[] dataBlock = result.getScanRecord().getBytes();
+                        int temp = (dataBlock[23] & 0xFF) - 43;
+                        int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
+                        SQLiteDatabaseHandler db = MainActivity.getDatabase();
+                        if(db.tireExists(result.getDevice().getAddress())) {
+                            db.updateTireRunning(new Tire(result.getDevice().getAddress(),temp,temp,1,pressure,pressure,1));
+                            showTireData(myView);
+                            System.out.println("UPDATED");
+                        }
+                    }
+                }
             }
         }
-    }
-
-    public void logthis(String msg) {
-        logger.append(msg + "\n");
-        Log.d(TAG, msg);
-    }
-
+    };
 }

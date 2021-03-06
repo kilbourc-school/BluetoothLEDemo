@@ -16,12 +16,23 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:text="@string/check_permissions" />
-    <TextView
-        android:id="@+id/loggerh"
-        android:layout_width="fill_parent"
+
+    <TextView android:id="@+id/tire1"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""
-        android:textAppearance="?android:attr/textAppearanceMedium" />
+        android:text="" />
+    <TextView android:id="@+id/tire2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="" />
+    <TextView android:id="@+id/tire3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="" />
+    <TextView android:id="@+id/tire4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="" />
 
     <LinearLayout
         android:layout_width="fill_parent"
