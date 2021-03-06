@@ -17,9 +17,6 @@ import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 
 import java.util.List;
 
@@ -29,19 +26,36 @@ import java.util.List;
  */
 public class HelpFragment extends Fragment {
     private static final int REQUEST_ENABLE_BT = 2;
+    private final BluetoothLeScanner mBluetoothLeScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
     //bluetooth device and code to turn the device on if needed.
     BluetoothAdapter mBluetoothAdapter = null;
     View myView = null;
     boolean tempPref = false;
     boolean presPref = false;
-    private final BluetoothLeScanner mBluetoothLeScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
-
-    public HelpFragment() {
-        // Required empty public constructor
-    }
+    private final ScanCallback mScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            super.onScanResult(callbackType, result);
+            if (result != null && result.getDevice() != null) {
+                if (result.getDevice().getName() != null) {
+                    if (result.getDevice().getName().contains("TM")) {
+                        byte[] dataBlock = result.getScanRecord().getBytes();
+                        int temp = (dataBlock[23] & 0xFF) - 43;
+                        int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
+                        SQLiteDatabaseHandler db = MainActivity.getDatabase();
+                        if (db.tireExists(result.getDevice().getAddress())) {
+                            db.updateTireRunning(result.getDevice().getAddress(), temp, pressure);
+                            showTireData();
+                            System.out.println("UPDATED");
+                        }
+                    }
+                }
+            }
+        }
+    };
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         myView = inflater.inflate(R.layout.fragment_help, container, false);
         checkpermissions();
         startbt();
@@ -67,17 +81,17 @@ public class HelpFragment extends Fragment {
             }
         });
         button = myView.findViewById(R.id.btn_discover);
-        button.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v){
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
                 getView().setVisibility(View.GONE);
                 getActivity()
                         .getSupportFragmentManager()
                         .beginTransaction()
                         .addToBackStack("tag")
-                        .replace(android.R.id.content,new DiscoverFragment(), "tag")
+                        .replace(android.R.id.content, new DiscoverFragment(), "tag")
                         .commit();
             }
-            });
+        });
     }
 
     void showTireData() {
@@ -108,7 +122,7 @@ public class HelpFragment extends Fragment {
                     temp = (int) ((temp * 1.8) + 32);
                     tempSign = " °F";
                 }
-                textView.setText("Tire " + (i+1) + "\n" + pressure + pressureSign + "\n" + temp + tempSign + "\n\n");
+                textView.setText("Tire " + (i + 1) + "\n" + pressure + pressureSign + "\n" + temp + tempSign + "\n\n");
             }
         }
     }
@@ -133,27 +147,4 @@ public class HelpFragment extends Fragment {
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
     }
-
-    private final ScanCallback mScanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            super.onScanResult(callbackType, result);
-            if (result == null || result.getDevice() == null) {
-            } else {
-                if (result.getDevice().getName() != null) {
-                    if (result.getDevice().getName().contains("TM")) {
-                        byte[] dataBlock = result.getScanRecord().getBytes();
-                        int temp = (dataBlock[23] & 0xFF) - 43;
-                        int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
-                        SQLiteDatabaseHandler db = MainActivity.getDatabase();
-                        if(db.tireExists(result.getDevice().getAddress())) {
-                            db.updateTireRunning(result.getDevice().getAddress(),temp,pressure);
-                            showTireData();
-                            System.out.println("UPDATED");
-                        }
-                    }
-                }
-            }
-        }
-    };
 }

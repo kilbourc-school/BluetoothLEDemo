@@ -17,11 +17,64 @@ import androidx.fragment.app.Fragment;
 
 public class DiscoverFragment extends Fragment {
 
-    private BluetoothLeScanner mBluetoothLeScanner;
     private final static String TAG = "DiscoverFragment";
     TextView logger;
+    private BluetoothLeScanner mBluetoothLeScanner;
     private Button discover;
     private Boolean discovering = false;
+    private final ScanCallback mScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            super.onScanResult(callbackType, result);
+
+            if (result == null || result.getDevice() == null) {
+                logthis("The data result is empty or no data");
+            } else {
+                if (result.getDevice().getName() != null) {
+                    if (result.getDevice().getName().contains("TM")) {
+//                        //name
+//                        StringBuilder builder = new StringBuilder("Name: ").append(result.getDevice().getName());
+//                        //address
+//                        builder.append("\n").append("address: ").append(result.getDevice().getAddress());
+                        //data
+                        byte[] dataBlock = result.getScanRecord().getBytes();
+                        // logthis(Arrays.toString(dataBlock));
+                        int temp = (dataBlock[23] & 0xFF) - 43;
+                        int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
+
+//                        logthis("temp: "+temp + " in C");
+                        logthis("temp: " + ((temp * 1.8) + 32) + " in F");
+//                        logthis("pressure: " + pressure + "in kpa");
+                        logthis("pressure: " + (pressure / 6.895) + "in psi");
+//                        String UUIDx = UUID.nameUUIDFromBytes(result.getScanRecord().getBytes()).toString();
+//                        logthis("UUID:" +UUIDx);
+
+                        Tire tire = new Tire(result.getDevice().getAddress(), temp, temp, pressure, pressure);
+                        SQLiteDatabaseHandler db = MainActivity.getDatabase();
+                        if (db.tireExists(tire.getAddress())) {
+                            db.updateTire(tire);
+                            logthis("TRASMITTER UPDATED!");
+                        } else {
+                            db.addTire(tire);
+                            logthis("TRASMITTER ADDED!");
+                        }
+
+                        stop_discover();
+                    }
+                }
+            }
+
+        }
+
+        @Override
+        public void onScanFailed(int errorCode) {
+            logthis("Discovery onScanFailed: " + errorCode);
+            discovering = false;
+            discover.setText(R.string.startDiscovering);
+            super.onScanFailed(errorCode);
+
+        }
+    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -48,7 +101,7 @@ public class DiscoverFragment extends Fragment {
                         .getSupportFragmentManager()
                         .beginTransaction()
                         .addToBackStack("tag")
-                        .replace(android.R.id.content,new HelpFragment(), "tag")
+                        .replace(android.R.id.content, new HelpFragment(), "tag")
                         .commit();
             }
         });
@@ -67,60 +120,6 @@ public class DiscoverFragment extends Fragment {
         discovering = true;
         discover.setText(R.string.stopDiscover);
     }
-
-    private final ScanCallback mScanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            super.onScanResult(callbackType, result);
-
-            if (result == null || result.getDevice() == null) {
-                logthis("The data result is empty or no data");
-            } else {
-                if (result.getDevice().getName() != null) {
-                    if (result.getDevice().getName().contains("TM")) {
-//                        //name
-//                        StringBuilder builder = new StringBuilder("Name: ").append(result.getDevice().getName());
-//                        //address
-//                        builder.append("\n").append("address: ").append(result.getDevice().getAddress());
-                        //data
-                        byte[] dataBlock = result.getScanRecord().getBytes();
-                       // logthis(Arrays.toString(dataBlock));
-                        int temp = (dataBlock[23] & 0xFF) - 43;
-                        int pressure = (((dataBlock[24] & 0xFF) & 0x70) << 4) | (dataBlock[22] & 0xFF);
-
-//                        logthis("temp: "+temp + " in C");
-                        logthis("temp: "+ ((temp * 1.8) + 32) + " in F");
-//                        logthis("pressure: " + pressure + "in kpa");
-                        logthis("pressure: " + (pressure/6.895) + "in psi");
-//                        String UUIDx = UUID.nameUUIDFromBytes(result.getScanRecord().getBytes()).toString();
-//                        logthis("UUID:" +UUIDx);
-
-                        Tire tire = new Tire(result.getDevice().getAddress(),temp,temp,pressure,pressure);
-                        SQLiteDatabaseHandler db = MainActivity.getDatabase();
-                        if(db.tireExists(tire.getAddress())) {
-                            db.updateTire(tire);
-                            logthis("TRASMITTER UPDATED!");
-                        }else {
-                            db.addTire(tire);
-                            logthis("TRASMITTER ADDED!");
-                        }
-
-                        stop_discover();
-                    }
-                }
-            }
-
-        }
-
-        @Override
-        public void onScanFailed(int errorCode) {
-            logthis("Discovery onScanFailed: " + errorCode);
-            discovering = false;
-            discover.setText(R.string.startDiscovering);
-            super.onScanFailed(errorCode);
-
-        }
-    };
 
     public void logthis(String msg) {
         logger.append(msg + "\n");
